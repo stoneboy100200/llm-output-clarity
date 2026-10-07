@@ -1,0 +1,41 @@
+{
+  "name": "llm-output-clarity",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A Karpathy-inspired agent skill for readable, evidence-aware, multilingual explanations.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stoneboy100200/llm-output-clarity.git"
+  },
+  "homepage": "https://github.com/stoneboy100200/llm-output-clarity#readme",
+  "bugs": { "url": "https://github.com/stoneboy100200/llm-output-clarity/issues" },
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test",
+    "check": "node scripts/check.mjs",
+    "eval:validate": "node scripts/evaluate.mjs validate",
+    "pack:check": "npm pack --dry-run"
+  },
+  "files": [
+    "skills/",
+    "README.md",
+    "README.zh-CN.md",
+    "README.ja.md",
+    "README.es.md",
+    "README.ar.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "scripts/",
+    "test/",
+    "docs/",
+    "integrations/",
+    "evals/README.md",
+    "evals/cases.json",
+    "evals/rubric.md"
+  ],
+  "devDependencies": { "yaml": "2.9.1" }
+}

@@ -1,0 +1,8 @@
+node_modules/
+artifacts/
+evals/runs/
+*.tgz
+.env
+.env.*
+!.env.example
+.DS_Store
