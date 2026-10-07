@@ -24,6 +24,11 @@ Language contributions need fluent review. Preserve code, citations, negation,
 units, and confidence in translations. Include the language's own failure modes
 instead of translating English grammar restrictions verbatim.
 
+Keep the English README's usage instructions in English. Native language names
+in its navigation are intentional; multilingual demonstrations belong in the
+dedicated examples or translated READMEs. The script-based regression check is
+a narrow guard against mixed examples, not a language detector or translation review.
+
 Never commit tokens, private code, production logs, customer data, or proprietary
 prompts. Do not copy ASD's specification or dictionary. Preserve applicable MIT
 notices when adapting upstream content. See [third-party notices](./THIRD_PARTY_NOTICES.md).

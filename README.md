@@ -92,7 +92,7 @@ After installation, ask for the skill by name without depending on a command pre
 
 ```text
 Use llm-output-clarity to explain this failure. Separate observations from hypotheses.
-请使用 llm-output-clarity 用中文比较这两个方案，先给建议，再给依据和风险。
+Use llm-output-clarity to compare these two options. Give the recommendation, evidence, and risks.
 Use llm-output-clarity to explain the request flow with a diagram.
 Use llm-output-clarity to make an offline HTML explainer with a before/after toggle.
 Use llm-output-clarity to plan a narrated explainer video. Do not install anything yet.

@@ -111,6 +111,13 @@ Scores are 1-5. All blocker flags and a rationale are mandatory. The summary kee
 dimension means, blocker counts, character lengths, and recorded token totals
 separate. Unknown usage remains `null`. It deliberately does not declare a winner.
 
+Scoring revalidates the saved key: every represented case/trial must have exactly
+one response for each of the four conditions, with the same run and model settings.
+Malformed identifiers, duplicate responses, and invalid token counts are rejected.
+Keep the original key intact. This check does not detect an entire case/trial
+removed from both the key and score file, nor prove that self-reported metadata
+is true. Preserve the original run manifest and raw responses for auditing.
+
 ## Decide whether the change helps
 
 Inspect blocking errors before readability gains. Do not trade a false root cause

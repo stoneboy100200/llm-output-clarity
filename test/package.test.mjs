@@ -20,6 +20,15 @@ test('README checks reject a missing language edition', () => {
   assert.throws(() => checkReadmes(incomplete), /Missing README language/);
 });
 
+test('English usage examples reject untranslated instructions while language navigation remains valid', () => {
+  assert.doesNotThrow(() => checkReadmes(readmes));
+  const changed = new Map(readmes);
+  changed.set('README.md', changed.get('README.md').replace(
+    'Use llm-output-clarity to compare these two options. Give the recommendation, evidence, and risks.',
+    '请使用 llm-output-clarity 用中文比较这两个方案，先给建议，再给依据和风险。'));
+  assert.throws(() => checkReadmes(changed), /Untranslated instruction/);
+});
+
 test('README checks reject a broken language switcher', () => {
   const incomplete = new Map(readmes);
   incomplete.set('README.ja.md', incomplete.get('README.ja.md').replace('](./README.es.md)', '](./missing.md)'));

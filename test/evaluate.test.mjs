@@ -53,6 +53,12 @@ test('duplicate or incomplete fixtures are rejected', () => {
   assert.throws(() => validateCases([{ ...cases[0], must_preserve: [] }]), /required/);
 });
 
+test('fixture ids must be strings and cannot pass through regex coercion', () => {
+  for (const id of [undefined, null, 123, true, '', ['valid-id']]) {
+    assert.throws(() => validateCases([{ ...cases[0], id }]), /Invalid case id/);
+  }
+});
+
 test('response validation rejects missing, duplicate, failed, or incomparable runs', () => {
   assert.equal(validateResponses(responses, requests).length, 4);
   assert.throws(() => validateResponses(responses.slice(1), requests), /coverage/);
@@ -77,6 +83,14 @@ test('blind packets hide condition and model metadata, with separate recoverable
   }
 });
 
+test('response fields cannot overwrite generated blind identifiers', () => {
+  const { packets, key } = makeBlind(responses.map(row => ({ ...row, blind_id: 'supplied-id' })), cases);
+  for (const packet of packets) {
+    assert.notEqual(packet.blind_id, 'supplied-id');
+    assert.equal(key.find(row => row.blind_id === packet.blind_id)?.response, packet.response);
+  }
+});
+
 test('scores retain blockers and missing token counts, not a fake winner', () => {
   const { packets, key } = makeBlind(responses, cases);
   const scores = scoresFor(packets);
@@ -95,6 +109,35 @@ test('scores reject missing, duplicate, invalid, or unexplained judgments', () =
   assert.throws(() => summarize([scores[0], scores[0], ...scores.slice(2)], key), /duplicate/);
   assert.throws(() => summarize(scores.map(score => ({ ...score, fidelity: 6 })), key), /Invalid/);
   assert.throws(() => summarize(scores.map(score => ({ ...score, notes: '' })), key), /rationale/);
+});
+
+test('scoring rejects keys with incomplete condition coverage or duplicate response identities', () => {
+  const { packets, key } = makeBlind(responses, cases);
+  const scores = scoresFor(packets);
+  assert.throws(() => summarize(scores.slice(1), key.slice(1)), /coverage/);
+  const duplicate = key.map((row, index) => index === 1 ? { ...row, condition: key[0].condition } : row);
+  assert.throws(() => summarize(scores, duplicate), /Duplicate response/);
+});
+
+test('scoring rechecks run, model, and usage metadata from a saved key', () => {
+  const { packets, key } = makeBlind(responses, cases);
+  const scores = scoresFor(packets);
+  assert.throws(() => summarize(scores, key.map((row, index) => index ? row : { ...row, run_id: 'other-run' })), /mismatched run/);
+  assert.throws(() => summarize(scores, key.map((row, index) => index ? row : { ...row, metadata: { ...row.metadata, model: 'other-model' } })), /differ/);
+  assert.throws(() => summarize(scores, key.map(row => ({ ...row, output_tokens: -1 }))), /Invalid output_tokens/);
+});
+
+test('scoring rejects malformed key identifiers and unsupported conditions', () => {
+  const { packets, key } = makeBlind(responses, cases);
+  const scores = scoresFor(packets);
+  for (const condition of ['unknown', '__proto__', 'constructor']) {
+    assert.throws(() => summarize(scores, key.map(row => ({ ...row, condition }))), /Invalid key condition/);
+  }
+  assert.throws(() => summarize(scores, key.map(row => ({ ...row, blind_id: undefined }))), /Invalid blind id/);
+  assert.throws(() => summarize(scores, key.map(row => ({ ...row, case_id: 123 }))), /Invalid key case id/);
+  for (const trial of [0, -1, 1.5, '1']) {
+    assert.throws(() => summarize(scores, key.map(row => ({ ...row, trial }))), /Invalid key trial/);
+  }
 });
 
 test('prepare snapshots all conditions without calls and refuses overwrite', async () => {

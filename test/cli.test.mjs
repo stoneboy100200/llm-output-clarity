@@ -14,7 +14,11 @@ const fail = args => spawnSync(process.execPath, [script, ...args], { encoding: 
 test('CLI validates fixtures and rejects unknown commands and flags', () => {
   assert.equal(JSON.parse(run(['validate'])).cases, cases.length);
   assert.match(run(['--help']), /prepare/);
-  assert.notEqual(fail(['unknown']).status, 0);
+  for (const command of ['unknown', 'constructor', 'toString', '__proto__']) {
+    const rejected = fail([command]);
+    assert.notEqual(rejected.status, 0);
+    assert.match(rejected.stderr, /Unknown command/);
+  }
   assert.notEqual(fail(['prepare', '--unexpected', 'value']).status, 0);
   assert.notEqual(fail(['prepare', '--out']).status, 0);
 });
@@ -52,6 +56,11 @@ test('offline CLI prepare/blind/score works end to end; detects tampered request
     const report = JSON.parse(run(['score', '--key', keyPath, '--scores', scorePath]));
     assert.equal(report.groups.candidate.count, cases.length);
     assert.equal(report.groups.candidate.output_tokens, cases.length * 8);
+    const malformedPath = join(directory, 'malformed-scores.jsonl');
+    await writeFile(malformedPath, '\n\nnot-json\n');
+    const malformed = fail(['score', '--key', keyPath, '--scores', malformedPath]);
+    assert.notEqual(malformed.status, 0);
+    assert.match(malformed.stderr, /Invalid JSON on line 3/);
     requests[0].instruction += ' changed';
     await writeFile(requestPath, requests.map(row => JSON.stringify(row)).join('\n'));
     const tampered = fail(['blind', '--run', runDirectory, '--responses', responsePath, '--out', join(directory, 'bad')]);

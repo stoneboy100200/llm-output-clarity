@@ -22,6 +22,12 @@ export function checkReadmes(readmes) {
   ];
   for (const [name, content] of readmes) {
     assert.doesNotMatch(content, /[\u202a-\u202e\u2066-\u2069]/u, `Hidden direction control in ${name}`);
+    if (name === 'README.md') {
+      for (const [, example] of content.matchAll(/```text\r?\n([\s\S]*?)\r?\n```/g)) {
+        assert.doesNotMatch(example, /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Arabic}]/u,
+          'Untranslated instruction in an English README usage example');
+      }
+    }
     for (const target of readmes.keys()) {
       assert.ok(content.includes(`](./${target})`), `Missing language navigation in ${name}: ${target}`);
     }

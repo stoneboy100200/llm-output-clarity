@@ -16,7 +16,7 @@ export function validateCases(cases) {
   assert.ok(Array.isArray(cases) && cases.length > 0, 'Cases must be a nonempty array');
   const identifiers = new Set();
   for (const item of cases) {
-    assert.ok(/^[a-z0-9-]+$/.test(item.id), 'Invalid case id');
+    assert.ok(item && typeof item.id === 'string' && /^[a-z0-9-]+$/.test(item.id), 'Invalid case id');
     assert.ok(!identifiers.has(item.id), `Duplicate case: ${item.id}`);
     identifiers.add(item.id);
     assert.ok(typeof item.language === 'string' && item.language.length > 0, 'Fixture language tag required');
@@ -83,8 +83,9 @@ export async function prepare({ upstream, out, trials = 3 }) {
 
 async function readJsonLines(path) {
   const text = await readFile(path, 'utf8');
-  return text.split(/\r?\n/).filter(line => line.trim()).map((line, index) => {
-    try { return JSON.parse(line); }
+  return text.split(/\r?\n/).flatMap((line, index) => {
+    if (!line.trim()) return [];
+    try { return [JSON.parse(line)]; }
     catch { throw new Error(`Invalid JSON on line ${index + 1} of ${path}`); }
   });
 }
@@ -138,7 +139,7 @@ export function makeBlind(rows, cases) {
       prompt: item.prompt, must_preserve: item.must_preserve, must_not: item.must_not,
       reader_questions: item.reader_questions, response: row.response,
     });
-    key.push({ blind_id: blindId, ...row });
+    key.push({ ...row, blind_id: blindId });
   }
   return { packets, key };
 }
@@ -146,6 +147,20 @@ export function makeBlind(rows, cases) {
 export function summarize(scores, key) {
   assert.ok(Array.isArray(scores) && Array.isArray(key) && scores.length === key.length && key.length > 0,
     'Scores must cover every blind response');
+  const runId = key[0]?.run_id;
+  assert.ok(typeof runId === 'string' && runId.trim(), 'Invalid key run id');
+  const expected = new Map();
+  for (const row of key) {
+    assert.ok(row && typeof row.blind_id === 'string' && row.blind_id.trim(), 'Invalid blind id');
+    assert.ok(typeof row.case_id === 'string' && /^[a-z0-9-]+$/.test(row.case_id), 'Invalid key case id');
+    assert.ok(Number.isSafeInteger(row.trial) && row.trial > 0, 'Invalid key trial');
+    assert.ok(conditions.includes(row.condition), 'Invalid key condition');
+    for (const condition of conditions) {
+      const request = { run_id: runId, case_id: row.case_id, trial: row.trial, condition };
+      expected.set(rowKey(request), request);
+    }
+  }
+  validateResponses(key, [...expected.values()]);
   const indexed = new Map(key.map(row => [row.blind_id, row]));
   assert.equal(indexed.size, key.length, 'Duplicate blind ids in key');
   const seen = new Set();
@@ -194,13 +209,13 @@ async function main(args) {
     validate: [], prepare: ['upstream', 'out', 'trials'],
     blind: ['run', 'responses', 'out'], score: ['key', 'scores'],
   };
-  assert.ok(command in allowed, `Unknown command: ${command}`);
+  assert.ok(Object.hasOwn(allowed, command), `Unknown command: ${command}`);
   const options = {};
   assert.equal(rest.length % 2, 0, 'Flags require values');
   for (let index = 0; index < rest.length; index += 2) {
     assert.ok(rest[index].startsWith('--'), 'Expected a flag');
     const flag = rest[index].slice(2);
-    assert.ok(allowed[command].includes(flag) && !(flag in options), `Unknown or duplicate flag: ${flag}`);
+    assert.ok(allowed[command].includes(flag) && !Object.hasOwn(options, flag), `Unknown or duplicate flag: ${flag}`);
     options[flag] = rest[index + 1];
   }
   if (command === 'validate') console.log(JSON.stringify({ cases: (await loadCases()).length }));
